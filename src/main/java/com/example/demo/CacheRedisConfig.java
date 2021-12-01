@@ -33,7 +33,7 @@ public class CacheRedisConfig {
                                 .stream()
                                 .forEach(spec -> builder
                                         .withCacheConfiguration(spec.getKey(),
-                                                defaultCacheConfig().entryTtl(Duration.ofSeconds(spec.getValue().getTimeout())))
+                                                defaultCacheConfig().entryTtl(Duration.ofSeconds(spec.getValue().getExpired())))
                                 );
                     }
                     ;

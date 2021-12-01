@@ -52,11 +52,11 @@ public class CacheMemoryConfig {
   }
 
   private CaffeineCache buildCache(String name, CacheConfiguration.CacheSpec cacheSpec, Ticker ticker) {
-    LOGGER.info("Cache {} specified timeout of {} min, max of {}", name, cacheSpec.getTimeout(),
+    LOGGER.info("Cache {} specified expired of {} min, max of {}", name, cacheSpec.getExpired(),
         cacheSpec.getMax());
     final Caffeine<Object, Object> caffeineBuilder
         = Caffeine.newBuilder()
-        .expireAfterWrite(cacheSpec.getTimeout(), TimeUnit.SECONDS)
+        .expireAfterWrite(cacheSpec.getExpired(), TimeUnit.SECONDS)
         .maximumSize(cacheSpec.getMax())
         .ticker(ticker);
     return new CaffeineCache(name, caffeineBuilder.build());
