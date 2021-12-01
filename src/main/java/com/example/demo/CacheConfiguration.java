@@ -15,7 +15,7 @@ public class CacheConfiguration {
   @Data
   public static class CacheSpec {
 
-    private Integer timeout;
+    private Integer expired;
     private Integer max = 50;
   }
 
