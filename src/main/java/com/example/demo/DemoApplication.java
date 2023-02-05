@@ -1,48 +1,71 @@
 package com.example.demo;
 
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.CommandLineRunner;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.cache.RedisCacheManagerBuilderCustomizer;
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.cache.annotation.EnableCaching;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.data.redis.cache.RedisCacheConfiguration;
-import org.springframework.data.redis.cache.RedisCacheManager.RedisCacheManagerBuilder;
-import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
-import org.springframework.data.redis.serializer.RedisSerializationContext;
-import org.springframework.scheduling.annotation.EnableScheduling;
-import org.springframework.scheduling.annotation.Scheduled;
-
-import java.time.Duration;
-
-import static org.springframework.data.redis.serializer.RedisSerializationContext.SerializationPair;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.RestController;
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+import javax.servlet.http.HttpServletRequest;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.util.Map;
 
 @SpringBootApplication
-@EnableCaching
-@Slf4j
-//@EnableScheduling
+@RestController
 public class DemoApplication {
 
     public static void main(String[] args) {
         SpringApplication.run(DemoApplication.class, args);
     }
 
-    @Autowired
-    private Service service;
+    @PostMapping("/greeting")
+    public ResponseEntity<?> greet(HttpServletRequest httpServletRequest, @RequestBody Map body, @RequestHeader Map headers) throws JsonProcessingException, NoSuchAlgorithmException, InvalidKeyException {
+        String hashBody =
+                httpServletRequest.getHeader("digest")
+                        .replace("HA-256=", "");
+        String s1 = new ObjectMapper().writeValueAsString(body);
+        StringBuilder stringBuilder = new StringBuilder(s1);
+        stringBuilder.append(httpServletRequest.getHeader("date"));
+        String bodyString = stringBuilder.toString();
+        System.out.println(headers);
+        System.out.println(body);
 
-    @Bean
-    CommandLineRunner commandLineRunner() {
-        return args -> {
-            log.info("Start to load the user.");
-            log.info("Calling 1 : {}", service.findUserById("kanha"));
-            log.info("Calling 2: {}", service.findUserById("kanha"));
-            log.info("Calling 3: {}", service.findUserById("kanha"));
-            log.info("End of starting the user.");
-        };
+        String alg = "HmacSHA256";
+        String key = "123456789";
+        String s = hmacWithJava(alg, bodyString, key);
+        System.out.println(s);
+        System.out.println(hashBody.equals(s));
+        return ResponseEntity.ok("Greeting!");
+    }
+
+    @GetMapping("/names/{name}")
+    public ResponseEntity<?> greetWithName(@PathVariable("name") String name, @RequestHeader Map headers) {
+        System.out.println(headers);
+        return ResponseEntity.ok(Map.of("key", "my_key"));
+    }
+
+
+    public static String hmacWithJava(String algorithm, String data, String key)
+            throws NoSuchAlgorithmException, InvalidKeyException {
+        SecretKeySpec secretKeySpec = new SecretKeySpec(key.getBytes(), algorithm);
+        Mac mac = Mac.getInstance(algorithm);
+        mac.init(secretKeySpec);
+        return bytesToHex(mac.doFinal(data.getBytes()));
+    }
+
+    public static String bytesToHex(byte[] hash) {
+        StringBuilder hexString = new StringBuilder(2 * hash.length);
+        for (byte h : hash) {
+            String hex = Integer.toHexString(0xff & h);
+            if (hex.length() == 1)
+                hexString.append('0');
+            hexString.append(hex);
+        }
+        return hexString.toString();
     }
 
 
